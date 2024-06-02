@@ -1,8 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import ttk
 import sqlite3
 
-class BancoDeDados:
+class Database:
     def __init__(self, nome: str):
         self.conexao = sqlite3.connect("{}.db".format(nome))
         self.criar_tabelas()
@@ -15,136 +16,109 @@ class BancoDeDados:
         cursor.execute("CREATE TABLE IF NOT EXISTS Professores (id INTEGER PRIMARY KEY, nome TEXT, curso_id INTEGER, disciplina_id INTEGER, FOREIGN KEY(curso_id) REFERENCES Curso(id), FOREIGN KEY(disciplina_id) REFERENCES Disciplina(id))")
         self.conexao.commit()
 
-    def inserir_curso(self, nome: str):
+    def executar_query(self, query, parameters=()):
         cursor = self.conexao.cursor()
-        cursor.execute("INSERT INTO Curso (nome) VALUES (?)", (nome,))
+        cursor.execute(query, parameters)
         self.conexao.commit()
+        return cursor
 
-    def inserir_disciplina(self, nome: str, id_curso: int):
-        cursor = self.conexao.cursor()
-        cursor.execute("INSERT INTO Disciplina (nome, id_curso) VALUES (?, ?)", (nome, id_curso))
-        self.conexao.commit()
+class CursoManager:
+    def __init__(self, database):
+        self.db = database
 
-    def inserir_aluno(self, nome: str, curso_id: int):
-        cursor = self.conexao.cursor()
-        cursor.execute("INSERT INTO Aluno (nome, curso_id) VALUES (?, ?)", (nome, curso_id))
-        self.conexao.commit()
-    
-    def inserir_professor(self, nome: str, curso_id: int, disciplina_id: int):
-        cursor = self.conexao.cursor()
-        cursor.execute("INSERT INTO Professores (nome, curso_id, disciplina_id) VALUES (?, ?, ?)", (nome, curso_id, disciplina_id))
-        self.conexao.commit()
+    def inserir_curso(self, nome):
+        self.db.executar_query("INSERT INTO Curso (nome) VALUES (?)", (nome,))
 
-    def retirar_curso(self, id: int):
-        cursor = self.conexao.cursor()
-        cursor.execute("DELETE FROM Curso WHERE id = ?", (id,))
-        self.conexao.commit()
+    def retirar_curso(self, id):
+        self.db.executar_query("DELETE FROM Curso WHERE id = ?", (id,))
 
-    def retirar_disciplina(self, id: int):
-        cursor = self.conexao.cursor()
-        cursor.execute("DELETE FROM Disciplina WHERE id = ?", (id,))
-        self.conexao.commit()
+    def listar_cursos(self):
+        return self.db.executar_query("SELECT id, nome FROM Curso").fetchall()
 
-    def retirar_aluno(self, id: int):
-        cursor = self.conexao.cursor()
-        cursor.execute("DELETE FROM Aluno WHERE id = ?", (id,))
-        self.conexao.commit()
+class DisciplinaManager:
+    def __init__(self, database):
+        self.db = database
 
-    def retirar_professor(self, id: int):
-        cursor = self.conexao.cursor()
-        cursor.execute("DELETE FROM Professores WHERE id = ?", (id,))
-        self.conexao.commit()
+    def inserir_disciplina(self, nome, id_curso):
+        self.db.executar_query("INSERT INTO Disciplina (nome, id_curso) VALUES (?, ?)", (nome, id_curso))
 
-    def atualizar_curso(self, id: int, novo_nome: str):
-        cursor = self.conexao.cursor()
-        cursor.execute("SELECT nome FROM Curso WHERE id = ?", (id,))
-        curso_atual = cursor.fetchone()
-        if curso_atual is None:
-            messagebox.showerror("Erro", "Curso não encontrado!")
-            return
-        nome_atual = curso_atual[0]
-        nome = novo_nome if novo_nome else nome_atual
-        cursor.execute("UPDATE Curso SET nome = ? WHERE id = ?", (nome, id))
-        self.conexao.commit()
+    def retirar_disciplina(self, id):
+        self.db.executar_query("DELETE FROM Disciplina WHERE id = ?", (id,))
 
-    def atualizar_disciplina(self, id: int, novo_nome: str, novo_id_curso: int):
-        cursor = self.conexao.cursor()
-        cursor.execute("SELECT nome, id_curso FROM Disciplina WHERE id = ?", (id,))
-        disciplina_atual = cursor.fetchone()
-        if disciplina_atual is None:
-            messagebox.showerror("Erro", "Disciplina não encontrada!")
-            return
-        nome_atual, id_curso_atual = disciplina_atual
-        nome = novo_nome if novo_nome else nome_atual
-        id_curso = novo_id_curso if novo_id_curso else id_curso_atual
-        cursor.execute("UPDATE Disciplina SET nome = ?, id_curso = ? WHERE id = ?", (nome, id_curso, id))
-        self.conexao.commit()
+    def listar_disciplinas(self):
+        return self.db.executar_query("SELECT id, nome FROM Disciplina").fetchall()
 
-    def atualizar_aluno(self, id: int, novo_nome: str, novo_curso_id: int):
-        cursor = self.conexao.cursor()
-        cursor.execute("SELECT nome, curso_id FROM Aluno WHERE id = ?", (id,))
-        aluno_atual = cursor.fetchone()
-        if aluno_atual is None:
-            messagebox.showerror("Erro", "Aluno não encontrado!")
-            return
-        nome_atual, curso_id_atual = aluno_atual
-        nome = novo_nome if novo_nome else nome_atual
-        curso_id = novo_curso_id if novo_curso_id else curso_id_atual
-        cursor.execute("UPDATE Aluno SET nome = ?, curso_id = ? WHERE id = ?", (nome, curso_id, id))
-        self.conexao.commit()
+class AlunoManager:
+    def __init__(self, database):
+        self.db = database
 
-    def atualizar_professor(self, id: int, novo_nome: str, novo_curso_id: int, novo_disciplina_id: int):
-        cursor = self.conexao.cursor()
-        cursor.execute("SELECT nome, curso_id, disciplina_id FROM Professores WHERE id = ?", (id,))
-        professor_atual = cursor.fetchone()
-        if professor_atual is None:
-            messagebox.showerror("Erro", "Professor não encontrado!")
-            return
-        nome_atual, curso_id_atual, disciplina_id_atual = professor_atual
-        nome = novo_nome if novo_nome else nome_atual
-        curso_id = novo_curso_id if novo_curso_id else curso_id_atual
-        disciplina_id = novo_disciplina_id if novo_disciplina_id else disciplina_id_atual
-        cursor.execute("UPDATE Professores SET nome = ?, curso_id = ?, disciplina_id = ? WHERE id = ?", (nome, curso_id, disciplina_id, id))
-        self.conexao.commit()
+    def inserir_aluno(self, nome, curso_id):
+        self.db.executar_query("INSERT INTO Aluno (nome, curso_id) VALUES (?, ?)", (nome, curso_id))
 
-def centralizar_janela(root, width=800, height=600):
-    screen_width = root.winfo_screenwidth()
-    screen_height = root.winfo_screenheight()
-    
-    x_cordinate = int((screen_width / 2) - (width / 2))
-    y_cordinate = int((screen_height / 2) - (height / 2))
-    
-    root.geometry(f"{width}x{height}+{x_cordinate}+{y_cordinate}")
+    def retirar_aluno(self, id):
+        self.db.executar_query("DELETE FROM Aluno WHERE id = ?", (id,))
 
-janela = tk.Tk()
-janela.title("Gerenciador da faculdade")
-centralizar_janela(janela)
-janela.resizable(False, False)
+    def listar_alunos(self):
+        return self.db.executar_query("SELECT id, nome FROM Aluno").fetchall()
 
-teste = BancoDeDados(nome="faculdade")
+class ProfessorManager:
+    def __init__(self, database):
+        self.db = database
 
-def abrir_janela_atualizar_curso():
-    janela_atualizar = tk.Toplevel(janela)
-    janela_atualizar.title("Atualizar Curso")
-    centralizar_janela(janela_atualizar, 400, 200)
-    
-    tk.Label(janela_atualizar, text="ID do Curso:").grid(row=0, column=0, padx=10, pady=10)
-    id_curso_entry = tk.Entry(janela_atualizar)
-    id_curso_entry.grid(row=0, column=1, padx=10, pady=10)
-    
-    tk.Label(janela_atualizar, text="Novo Nome do Curso:").grid(row=1, column=0, padx=10, pady=10)
-    novo_nome_entry = tk.Entry(janela_atualizar)
-    novo_nome_entry.grid(row=1, column=1, padx=10, pady=10)
-    
-    def atualizar_curso():
-        id_curso = int(id_curso_entry.get())
-        novo_nome = novo_nome_entry.get()
-        teste.atualizar_curso(id_curso, novo_nome)
-        janela_atualizar.destroy()
-        messagebox.showinfo("Sucesso", "Curso atualizado com sucesso!")
+    def inserir_professor(self, nome, curso_id, disciplina_id):
+        self.db.executar_query("INSERT INTO Professores (nome, curso_id, disciplina_id) VALUES (?, ?, ?)", (nome, curso_id, disciplina_id))
 
-    tk.Button(janela_atualizar, text="Atualizar", command=atualizar_curso).grid(row=2, column=0, columnspan=2, pady=10)
+    def retirar_professor(self, id):
+        self.db.executar_query("DELETE FROM Professores WHERE id = ?", (id,))
 
-tk.Button(janela, text="Atualizar Curso", command=abrir_janela_atualizar_curso).grid(row=0, column=0, padx=10, pady=10)
+    def listar_professores(self):
+        return self.db.executar_query("SELECT id, nome FROM Professores").fetchall()
 
-janela.mainloop()
+class Interface:
+    def __init__(self, nome):
+        self.janela = tk.Tk()
+        self.janela.title("Gerenciador da faculdade")
+        self.centralizar_janela()
+        self.janela.resizable(False, False)
+
+        self.notebook = ttk.Notebook(self.janela)
+        self.notebook.grid(row=0, column=0, padx=10, pady=10)
+
+        self.db = Database(nome)
+        self.curso_manager = CursoManager(self.db)
+        self.disciplina_manager = DisciplinaManager(self.db)
+        self.aluno_manager = AlunoManager(self.db)
+        self.professor_manager = ProfessorManager(self.db)
+
+        self.adicionar_frames()
+
+        self.janela.mainloop()
+
+    def centralizar_janela(self):
+        screen_width = self.janela.winfo_screenwidth()
+        screen_height = self.janela.winfo_screenheight()
+
+        x_cordinate = int((screen_width / 2) - (800 / 2))
+        y_cordinate = int((screen_height / 2) - (600 / 2))
+
+        self.janela.geometry(f"800x600+{x_cordinate}+{y_cordinate}")
+
+    def adicionar_frames(self):
+        self.frame_cursos = ttk.Frame(self.notebook)
+        self.frame_disciplinas = ttk.Frame(self.notebook)
+        self.frame_alunos = ttk.Frame(self.notebook)
+        self.frame_professores = ttk.Frame(self.notebook)
+
+        self.notebook.add(self.frame_cursos, text="Cursos")
+        self.notebook.add(self.frame_disciplinas, text="Disciplinas")
+        self.notebook.add(self.frame_alunos, text="Alunos")
+        self.notebook.add(self.frame_professores, text="Professores")
+
+        self.adicionar_widgets()
+
+    def adicionar_widgets(self):
+        # Adicione widgets para gerenciar cursos, disciplinas, alunos e professores aqui
+        pass
+
+if __name__ == "__main__":
+    Interface("faculdade")
