@@ -1,2 +1,6 @@
 __pycache__/funcs.cpython-312.pyc
 university.db
+build/main/base_library.zip
+/build
+/dist
+main.spec
