@@ -20,7 +20,7 @@ Este projeto foi desenvolvido como parte de uma atividade da faculdade para prat
 ## Como usar
 1. Clone este repositório:
 ```GIT
-git clone https://github.com/seu-usuario/seu-repositorio.git
+git clone https://github.com/seu-usuario/seu-repositorio.git](https://github.com/EltonMoDZ/gerenciador_de_faculdade_com_GUI.git
 ```
 
 2. Navegue até o diretório do projeto:
